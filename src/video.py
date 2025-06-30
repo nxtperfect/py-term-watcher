@@ -1,8 +1,7 @@
-from dataclasses import dataclass
-
 import cv2
 from cv2.typing import MatLike
 from os.path import isfile, exists
+import numpy as np
 
 
 class Video:
@@ -23,6 +22,7 @@ class Video:
             ret, frame = self.vid.read()
             count += 1
             if count > 500:
+                print(self.to_ascii(frame))
                 resized = self.resize(frame, 640, 480)
                 cv2.imwrite("TestFrame.jpg", resized)
                 break
@@ -34,6 +34,20 @@ class Video:
         new_w = int(frame.shape[1] * width_ratio)
         new_h = int(frame.shape[0] * height_ratio)
         return cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    def to_ascii(self, frame: MatLike):
+        ascii_chars = "@%#*+=-:. "
+        height = frame.shape[0]
+        width = frame.shape[1]
+        b, g, r = cv2.split(frame)
+        per_pixel_brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        out = []
+        for i in range(height):
+            for j in range(width):
+                brightness = per_pixel_brightness[i][j]
+                out[i][j] = ascii_chars[brightness % 10]
+            out[i][width] = "\n"
+        print(out[100][100])
 
 
 v = Video()
