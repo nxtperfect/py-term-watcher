@@ -3,6 +3,9 @@ from cv2.typing import MatLike
 from os.path import isfile, exists
 import numpy as np
 
+LINE_UP = "\033[1A"
+LINE_CLEAR = "\x1b[2K"
+
 
 class Video:
     path: str
@@ -15,20 +18,21 @@ class Video:
         if not exists(path) or not isfile(path):
             raise Exception("File doesn't exist or is a directory")
         self.vid = cv2.VideoCapture(path)
+
         if not self.vid.isOpened():
             raise Exception("File couldn't be opened")
-        count = 0
+
         while self.vid.isOpened():
             ret, frame = self.vid.read()
-            count += 1
-            if count > 500:
-                # resized = self.resize(frame, 640, 480)
-                resized: MatLike = self.resize(frame, 640 / 4, 480 / 11)
-                grayscale: MatLike = self.grayscale(resized)
-                ascii_frame: list[list[str]] = self.grayscale_to_ascii(grayscale)
-                for i, line in enumerate(ascii_frame):
-                    print("".join(line))
+            if not frame.any():
                 break
+            resized: MatLike = self.resize(frame, 640 / 4, 480 / 11)
+            grayscale: MatLike = self.grayscale(resized)
+            ascii_frame: list[list[str]] = self.grayscale_to_ascii(grayscale)
+            for line in ascii_frame:
+                print("".join(line))
+            for _ in range(len(ascii_frame)):
+                print(LINE_UP, end=LINE_CLEAR)
         self.vid.release()
 
     def resize(self, frame: MatLike, width: int, height: int) -> MatLike:
@@ -48,14 +52,14 @@ class Video:
         height: int = frame.shape[0]
         width: int = frame.shape[1]
         per_pixel_brightness: MatLike = cv2.split(frame)[0]
-        frame_ascii_converted = [[""] * width for _ in range(height)]
+        frame_ascii = np.zeros(shape=(height, width), dtype=str)
         for i in range(height):
             for j in range(width):
                 brightness: int = round(
                     (per_pixel_brightness[i][j] / 255) * len(ascii_chars) - 1
                 )
-                frame_ascii_converted[i][j] = ascii_chars[brightness]
-        return frame_ascii_converted
+                frame_ascii[i][j] = ascii_chars[brightness]
+        return frame_ascii
 
 
 v = Video()
