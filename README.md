@@ -3,4 +3,4 @@
 watch videos in your terminal
 
 # Usage
-main.py /path/to/video.mp4
+`main.py /path/to/video.mp4`
