@@ -1,32 +1,33 @@
+from dataclasses import dataclass
 import cv2
 from cv2.typing import MatLike
 from os.path import isfile, exists
+from os import get_terminal_size
 import numpy as np
 
 LINE_UP = "\033[1A"
 LINE_CLEAR = "\x1b[2K"
 
 
+@dataclass
 class Video:
     path: str
-    vid: cv2.VideoCapture
 
-    def __init__(self):
-        pass
-
-    def load_video(self, path: str):
-        if not exists(path) or not isfile(path):
-            raise Exception("File doesn't exist or is a directory")
-        self.vid = cv2.VideoCapture(path)
+    def play_video(self):
+        if not exists(self.path) or not isfile(self.path):
+            raise Exception(f"File doesn't exist or is a directory.")
+        self.vid = cv2.VideoCapture(self.path)
 
         if not self.vid.isOpened():
-            raise Exception("File couldn't be opened")
+            raise Exception(f"File couldn't be opened.")
 
+        width = get_terminal_size(0)[0]
+        height = get_terminal_size(0)[1] - 1  # account for new line
         while self.vid.isOpened():
-            ret, frame = self.vid.read()
+            _, frame = self.vid.read()
             if not frame.any():
                 break
-            resized: MatLike = self.resize(frame, 640 / 4, 480 / 11)
+            resized: MatLike = self.resize(frame, width, height)
             grayscale: MatLike = self.grayscale(resized)
             ascii_frame: list[list[str]] = self.grayscale_to_ascii(grayscale)
             for line in ascii_frame:
@@ -60,7 +61,3 @@ class Video:
                 )
                 frame_ascii[i][j] = ascii_chars[brightness]
         return frame_ascii
-
-
-v = Video()
-v.load_video("videos/test.mp4")
