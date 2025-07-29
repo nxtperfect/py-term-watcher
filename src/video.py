@@ -22,11 +22,12 @@ class Video:
             ret, frame = self.vid.read()
             count += 1
             if count > 500:
-                ascii_frame = self.to_ascii(frame)
-                resized = self.resize(frame, 640, 480)
-                grayscale = self.grayscale(resized)
-                cv2.imwrite("TestFrame.jpg", resized)
-                cv2.imwrite("TestFrameGrayscale.jpg", grayscale)
+                # resized = self.resize(frame, 640, 480)
+                resized: MatLike = self.resize(frame, 640 / 4, 480 / 11)
+                grayscale: MatLike = self.grayscale(resized)
+                ascii_frame: list[list[str]] = self.grayscale_to_ascii(grayscale)
+                for i, line in enumerate(ascii_frame):
+                    print("".join(line))
                 break
         self.vid.release()
 
@@ -37,25 +38,24 @@ class Video:
         new_h = int(frame.shape[0] * height_ratio)
         return cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
-    def grayscale(self, frame: MatLike):
+    def grayscale(self, frame: MatLike) -> MatLike:
         return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    def to_ascii(self, frame: MatLike):
-        ascii_chars = "@%#*+=-:. "
-        height = frame.shape[0]
-        width = frame.shape[1]
-        b, g, r = cv2.split(frame)
-        per_pixel_brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b
-        out = [[" "] * width] * height
-        print(len(out), len(out[0]))
-        for i in range(height - 1):
-            for j in range(width - 2):
-                brightness = per_pixel_brightness[i][j]
-                out[i][j] = ascii_chars[int(brightness % 10)]
-            out[i][width - 1] = "\n"
-        print(out[100][100])
-        print(["".join(x) for x in out])
-        return out
+    def grayscale_to_ascii(self, frame: MatLike) -> list[list[str]]:
+        ascii_chars = (
+            """$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`'."""
+        )
+        height: int = frame.shape[0]
+        width: int = frame.shape[1]
+        per_pixel_brightness: MatLike = cv2.split(frame)[0]
+        frame_ascii_converted = [[""] * width for _ in range(height)]
+        for i in range(height):
+            for j in range(width):
+                brightness: int = round(
+                    (per_pixel_brightness[i][j] / 255) * len(ascii_chars) - 1
+                )
+                frame_ascii_converted[i][j] = ascii_chars[brightness]
+        return frame_ascii_converted
 
 
 v = Video()
